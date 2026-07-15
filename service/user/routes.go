@@ -8,16 +8,15 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/justKody/ecom-go/service/auth"
-	"github.com/justKody/ecom-go/service/user"
 	"github.com/justKody/ecom-go/types"
 	"github.com/justKody/ecom-go/utils"
 )
 
 type Handler struct {
-	store *types.UserStore
+	store types.UserStore
 }
 
-func NewHandler(store *user.Store) *Handler {
+func NewHandler(store types.UserStore) *Handler {
 	return &Handler{store: store}
 }
 
@@ -36,6 +35,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var payload types.RegisterUserPayload
 	if err := utils.ParseJSON(r, &payload); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload
@@ -46,13 +46,8 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check if the user exists
-	user, err := (*h.store).GetUserByEmail(payload.Email)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("failed to get user by email: %w", err))
-		return
-	}
-
-	if user != nil {
+	_, err := h.store.GetUserByEmail(payload.Email)
+	if err == nil {
 		utils.WriteError(w, http.StatusBadRequest, errors.New("user already exists"))
 		return
 	}
@@ -65,7 +60,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create the user
-	if err := (*h.store).CreateUser(types.User{
+	if err := h.store.CreateUser(types.User{
 		FirstName: payload.FirstName,
 		LastName:  payload.LastName,
 		Email:     payload.Email,
