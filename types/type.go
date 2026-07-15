@@ -2,6 +2,7 @@ package types
 
 import "time"
 
+// u can test the interface by creating a mock store
 type UserStore interface {
 	GetUserByEmail(email string) (*User, error)
 	GetUserById(id int) (*User, error)
@@ -18,8 +19,8 @@ type User struct {
 }
 
 type RegisterUserPayload struct {
-	FirstName string `json: "firstName"`
-	LastName  string `json: "lastName"`
-	Email     string `json: "email"`
-	Password  string `json: "password"`
+	FirstName string `json: "firstName" validate:"required"`
+	LastName  string `json: "lastName" validate:"required"`
+	Email     string `json: "email" validate:"required,email"`
+	Password  string `json: "password" validate:"required,min=8"`
 }

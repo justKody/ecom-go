@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/justKody/ecom-go/service/auth"
 	"github.com/justKody/ecom-go/types"
@@ -12,10 +13,10 @@ import (
 )
 
 type Handler struct {
-	store types.UserStore
+	store *types.UserStore
 }
 
-func NewHandler(store types.UserStore) *Handler {
+func NewHandler(store *types.UserStore) *Handler {
 	return &Handler{store: store}
 }
 
@@ -36,8 +37,15 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 	}
 
+	// validate the payload
+	if err := utils.Validate.Struct(payload); err != nil {
+		err := err.(validator.ValidationErrors)
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
 	// check if the user exists
-	user, err := h.store.GetUserByEmail(payload.Email)
+	user, err := (*h.store).GetUserByEmail(payload.Email)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("failed to get user by email: %w", err))
 		return
@@ -56,7 +64,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create the user
-	if err := h.store.CreateUser(types.User{
+	if err := (*h.store).CreateUser(types.User{
 		FirstName: payload.FirstName,
 		LastName:  payload.LastName,
 		Email:     payload.Email,
