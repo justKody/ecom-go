@@ -8,6 +8,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/justKody/ecom-go/service/auth"
+	"github.com/justKody/ecom-go/service/user"
 	"github.com/justKody/ecom-go/types"
 	"github.com/justKody/ecom-go/utils"
 )
@@ -16,7 +17,7 @@ type Handler struct {
 	store *types.UserStore
 }
 
-func NewHandler(store *types.UserStore) *Handler {
+func NewHandler(store *user.Store) *Handler {
 	return &Handler{store: store}
 }
 
