@@ -3,6 +3,7 @@ package user
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -27,6 +28,43 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 }
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
+	// get JSON payload
+	var payload types.LoginUserPayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	// validate the payload
+	if err := utils.Validate.Struct(payload); err != nil {
+		err := err.(validator.ValidationErrors)
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	log.Println("payload:", payload)
+	// get the user by email
+	u, err := h.store.GetUserByEmail(payload.Email)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	log.Println("user:", u)
+
+	// verify the password
+	if !auth.VerifyPassword(u.Password, payload.Password) {
+		utils.WriteError(w, http.StatusBadRequest, errors.New("invalid password"))
+		return
+	}
+
+	// create a new JWT token
+	token, err := auth.CreateJWT(u.ID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"token": token})
 
 }
 
