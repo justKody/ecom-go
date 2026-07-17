@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/justKody/ecom-go/middleware"
 	"github.com/justKody/ecom-go/service/cart"
 	"github.com/justKody/ecom-go/service/order"
 	"github.com/justKody/ecom-go/service/product"
@@ -26,6 +27,8 @@ func NewAPIServer(addr string, db *sql.DB) *APIServer {
 
 func (s *APIServer) Run() error {
 	router := mux.NewRouter()
+	router.Use(middleware.Logger)
+
 	subRouter := router.PathPrefix("/api/v1").Subrouter()
 
 	userStore := user.NewStore(s.db)
