@@ -17,7 +17,7 @@ type ProductStore interface {
 }
 
 type OrderStore interface {
-	CreateOrder(Order) error
+	CreateOrder(Order) (int, error)
 	CreateOrderItem(OrderItem) error
 }
 

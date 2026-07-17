@@ -2,6 +2,7 @@ package product
 
 import (
 	"database/sql"
+	"strings"
 
 	"github.com/justKody/ecom-go/types"
 )
@@ -39,9 +40,16 @@ func (s *Store) CreateProduct(product types.CreateProductPayload) error {
 	}
 	return nil
 }
-
 func (s *Store) GetProductByIDs(ids []int) ([]types.Product, error) {
-	rows, err := s.db.Query("SELECT * FROM products WHERE id IN (?)", ids)
+	placeholders := make([]string, len(ids))
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	query := "SELECT * FROM products WHERE id IN (" + strings.Join(placeholders, ",") + ")"
+	rows, err := s.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}

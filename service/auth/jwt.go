@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -65,6 +66,7 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store types.UserStore) http.Handl
 		// get the user from the store
 		user, err := store.GetUserById(userId)
 		if err != nil {
+			log.Println("error getting user from store:", err)
 			permissionDenied(w)
 			return
 		}
@@ -79,6 +81,8 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store types.UserStore) http.Handl
 
 func getTokenFromRequest(r *http.Request) (string, error) {
 	tokenString := r.Header.Get("Authorization")
+	// bearer token
+	tokenString = strings.TrimPrefix(tokenString, "Bearer ")
 	if tokenString == "" {
 		return "", errors.New("unauthorized")
 	}
@@ -94,5 +98,5 @@ func GetUserIdFromContext(ctx context.Context) (int, error) {
 }
 
 func permissionDenied(w http.ResponseWriter) {
-	utils.WriteError(w, http.StatusForbidden, errors.New("permission denied"))
+	utils.WriteError(w, http.StatusForbidden, errors.New("permission denied!"))
 }
