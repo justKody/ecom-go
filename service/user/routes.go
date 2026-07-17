@@ -3,7 +3,6 @@ package user
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -42,15 +41,12 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("payload:", payload)
 	// get the user by email
 	u, err := h.store.GetUserByEmail(payload.Email)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-
-	log.Println("user:", u)
 
 	// verify the password
 	if !auth.VerifyPassword(u.Password, payload.Password) {
