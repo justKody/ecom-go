@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/justKody/ecom-go/service/cart"
+	"github.com/justKody/ecom-go/service/order"
 	"github.com/justKody/ecom-go/service/product"
 	"github.com/justKody/ecom-go/service/user"
 )
@@ -33,6 +35,11 @@ func (s *APIServer) Run() error {
 	productStore := product.NewStore(s.db)
 	productHandler := product.NewHandler(productStore)
 	productHandler.RegisterRoutes(subRouter)
+
+	orderStore := order.NewStore(s.db)
+
+	cartHandler := cart.NewHandler(orderStore, productStore, userStore)
+	cartHandler.RegisterRoutes(subRouter)
 
 	log.Println("Listening on", s.addr)
 

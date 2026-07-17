@@ -1,11 +1,16 @@
 package auth
 
 import (
+	"context"
+	"errors"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/justKody/ecom-go/config"
+	"github.com/justKody/ecom-go/types"
+	"github.com/justKody/ecom-go/utils"
 )
 
 type Claims struct {
@@ -25,9 +30,7 @@ func CreateJWT(userId int) (string, error) {
 		},
 	})
 
-	log.Println("token:", token)
 	tokenString, err := token.SignedString([]byte(config.Envs.JWTSecret))
-	log.Println("tokenString:", tokenString)
 	if err != nil {
 		return "", err
 	}
@@ -43,4 +46,53 @@ func VerifyJWT(tokenString string) (*Claims, error) {
 		return nil, err
 	}
 	return token.Claims.(*Claims), nil
+}
+
+func WithJWTAuth(handlerFunc http.HandlerFunc, store types.UserStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// get token from the user request
+		tokenString, err := getTokenFromRequest(r)
+
+		// validate the jwt
+		claims, err := VerifyJWT(tokenString)
+		if err != nil {
+			permissionDenied(w)
+			return
+		}
+		// get the user id from the token
+		userId := claims.UserId
+
+		// get the user from the store
+		user, err := store.GetUserById(userId)
+		if err != nil {
+			permissionDenied(w)
+			return
+		}
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, "userId", user.ID)
+
+		r = r.WithContext(ctx)
+		handlerFunc(w, r)
+	}
+}
+
+func getTokenFromRequest(r *http.Request) (string, error) {
+	tokenString := r.Header.Get("Authorization")
+	if tokenString == "" {
+		return "", errors.New("unauthorized")
+	}
+	return tokenString, nil
+}
+
+func GetUserIdFromContext(ctx context.Context) (int, error) {
+	userId, ok := ctx.Value("userId").(int)
+	if !ok {
+		return 0, errors.New("userId not found")
+	}
+	return userId, nil
+}
+
+func permissionDenied(w http.ResponseWriter) {
+	utils.WriteError(w, http.StatusForbidden, errors.New("permission denied"))
 }
